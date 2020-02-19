@@ -1,3 +1,65 @@
+function heapsort(arr) {
+    const heapSize = arr.length;
+    for (let i = heapSize/2; i >= 0; i--) {
+        sink(arr, i, heapSize);
+    }
+
+    for (let i = heapSize - 1; i > 0; i--) {
+        swap(arr, 0, i);
+        sink(arr, 0, i);
+    }
+}
+
+function sink(arr, i, heapSize) {
+    let largest = i;
+    const l = i*2 + 1;
+    const r = l + 1;
+
+    if (l < heapSize && arr[l] > arr[largest]) {
+        largest = l;
+    }
+
+    if (r < heapSize && arr[r] > arr[largest]) {
+        largest = r;
+    }
+
+    if (largest != i) {
+        swap(arr, i, largest);
+        sink(arr, largest, heapSize);
+    }
+}
+
+function countingSort(arr) {
+    let max = 0;
+    for (let el of arr) {
+        max = Math.max(max, el);
+    }
+
+    const count = new Array(max+1).fill(0);
+    for (let el of arr) {
+        count[el]++;
+    }
+
+    for (let i = 1; i < count.length; i++) {
+        count[i] += count[i-1];
+    }
+
+    const buffer = new Array(arr.length);
+
+
+    for (let i = arr.length; i > 0; i--) {
+        buffer[count[arr[i-1]]-1] = arr[i-1];
+        count[arr[i-1]]--;
+    }
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+        arr[i] = buffer[i];
+    }
+
+    return arr;
+}
+
+
 
 function* bottomUpMergeSortGen(arr) {
     let mergeGroup = 2;
