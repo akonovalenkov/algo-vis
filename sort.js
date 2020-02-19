@@ -1,5 +1,5 @@
 
-function countingSort(arr, mapper) {
+function* countingSortGen(arr, mapper) {
     if (arr.length < 2) {
         return arr;
     }
@@ -16,6 +16,7 @@ function countingSort(arr, mapper) {
             isSorted = false;
         }
         prevEl = el;
+        yield;
     }
 
     if (isSorted) {
@@ -25,10 +26,12 @@ function countingSort(arr, mapper) {
     const count = new Array(max+1).fill(0);
     for (let el of arr) {
         count[mapper ? mapper(el) : el]++;
+        yield;
     }
 
     for (let i = 1; i < count.length; i++) {
         count[i] += count[i-1];
+        yield;
     }
 
     const buffer = new Array(arr.length);
@@ -38,17 +41,19 @@ function countingSort(arr, mapper) {
         let el = mapper ? mapper(arr[i-1]) : arr[i-1];
         buffer[count[el]-1] = arr[i-1];
         count[el]--;
+        yield;
     }
 
     for (var i = 0, len = arr.length; i < len; i++) {
         arr[i] = buffer[i];
+        yield;
     }
 
     return arr;
 }
 
 
-function radixSort(arr, r) {
+function* radixSortGen(arr, r) {
     r = r || 8;
     const mask = (1<<r) - 1;
 
@@ -56,14 +61,22 @@ function radixSort(arr, r) {
 
     for (let el of arr) {
         max = Math.max(max, el);
+        yield;
     }
 
     let result;
     let runs = 0;
     while (max) {
-        result = countingSort(arr, x => (x >> (r*runs)) & mask);
+        let stateIter = countingSortGen(arr, x => (x >> (r*runs)) & mask);
+        let state = stateIter.next();
+        yield;
+        while (!state.done) {
+            state = stateIter.next();
+            yield;
+        }
         max >>= r;
         runs++;
+        result = state.value;
     }
     return result;
 }
@@ -340,7 +353,7 @@ function runRandomArrVis(config) {
     //const arr = new Array(arrSize).fill(42).map((v, i) => i % 2 == 0 ? 50: 100);
     //const arr = new Array(arrSize).fill(42).map((v, i) => i+1);
     //arr.reverse();
-    //shuffle(arr);
+    shuffle(arr);
     runVis(canvasId, arr, sortGen, speed);
 }
 
@@ -375,7 +388,7 @@ function* visGen(ctx, arr, algoGen) {
     draw(ctx, arr, 'yellow');
 }
 
-const arrSize = 1000;
+const arrSize = 100;
 const speed = 10;
 
 runRandomArrVis({
@@ -420,4 +433,17 @@ runRandomArrVis({
     speed: speed
 });
 
+runRandomArrVis({
+    canvasId: 'counting-sort-canvas',
+    arrSize: arrSize,
+    sortGen: countingSortGen,
+    speed: speed
+});
+
+runRandomArrVis({
+    canvasId: 'radix-sort-canvas',
+    arrSize: arrSize,
+    sortGen: radixSortGen,
+    speed: speed
+});
 
