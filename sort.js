@@ -1,3 +1,74 @@
+
+function countingSort(arr, mapper) {
+    if (arr.length < 2) {
+        return arr;
+    }
+
+    let isSorted = true;
+
+    let prevEl = mapper ? mapper(arr[0]) : arr[0];
+    let max = prevEl;
+
+    for (var i = 1, len = arr.length; i < len; i++) {
+        let el = mapper ? mapper(arr[i]) : arr[i];
+        max = Math.max(max, el);
+        if (el < prevEl) {
+            isSorted = false;
+        }
+        prevEl = el;
+    }
+
+    if (isSorted) {
+        return arr;
+    }
+
+    const count = new Array(max+1).fill(0);
+    for (let el of arr) {
+        count[mapper ? mapper(el) : el]++;
+    }
+
+    for (let i = 1; i < count.length; i++) {
+        count[i] += count[i-1];
+    }
+
+    const buffer = new Array(arr.length);
+
+
+    for (let i = arr.length; i > 0; i--) {
+        let el = mapper ? mapper(arr[i-1]) : arr[i-1];
+        buffer[count[el]-1] = arr[i-1];
+        count[el]--;
+    }
+
+    for (var i = 0, len = arr.length; i < len; i++) {
+        arr[i] = buffer[i];
+    }
+
+    return arr;
+}
+
+
+function radixSort(arr, r) {
+    r = r || 8;
+    const mask = (1<<r) - 1;
+
+    let max = 0;
+
+    for (let el of arr) {
+        max = Math.max(max, el);
+    }
+
+    let result;
+    let runs = 0;
+    while (max) {
+        result = countingSort(arr, x => (x >> (r*runs)) & mask);
+        max >>= r;
+        runs++;
+    }
+    return result;
+}
+
+
 function heapsort(arr) {
     const heapSize = arr.length;
     for (let i = heapSize/2; i >= 0; i--) {
@@ -28,37 +99,6 @@ function sink(arr, i, heapSize) {
         sink(arr, largest, heapSize);
     }
 }
-
-function countingSort(arr) {
-    let max = 0;
-    for (let el of arr) {
-        max = Math.max(max, el);
-    }
-
-    const count = new Array(max+1).fill(0);
-    for (let el of arr) {
-        count[el]++;
-    }
-
-    for (let i = 1; i < count.length; i++) {
-        count[i] += count[i-1];
-    }
-
-    const buffer = new Array(arr.length);
-
-
-    for (let i = arr.length; i > 0; i--) {
-        buffer[count[arr[i-1]]-1] = arr[i-1];
-        count[arr[i-1]]--;
-    }
-
-    for (var i = 0, len = arr.length; i < len; i++) {
-        arr[i] = buffer[i];
-    }
-
-    return arr;
-}
-
 
 
 function* bottomUpMergeSortGen(arr) {
