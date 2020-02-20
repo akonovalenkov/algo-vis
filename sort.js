@@ -60,13 +60,18 @@ function* countingSortGen(arr, mapper, max) {
 function* radixSortGen(arr, r) {
     yield { arr, count: [], buffer: [] };
     r = r || 8;
-    const mask = (1<<r) - 1;
+    let mask = (1<<r) - 1;
 
     let max = 0;
 
     for (let el of arr) {
         max = Math.max(max, el);
         yield { arr, count: [max], buffer: [] };
+    }
+
+    if (max < mask) {
+        r = Math.ceil(Math.log2(max));
+        mask = (1<<r) - 1;
     }
 
     let runs = 0;
@@ -361,7 +366,7 @@ function* shuffleSortGen(arr) {
 
 function runRandomArrVis(config) {
     const {contexts, arrSize, sortGen, speed} = config;
-    const arr = new Array(arrSize).fill(42).map(_ => getRandomInt(0, 101));
+    const arr = new Array(arrSize).fill(42).map(_ => getRandomInt(0, arrSize + 1));
     //const arr = new Array(arrSize).fill(42);//.map((v, i) => i+1);
     //const arr = new Array(arrSize).fill(42).map((v, i) => i % 2 == 0 ? 50: 100);
     //const arr = new Array(arrSize).fill(42).map((v, i) => i+1);

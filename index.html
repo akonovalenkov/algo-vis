@@ -6,53 +6,99 @@
         <title></title>
     </head>
     <body>
-        <div>
-            Quick Sort
-            <canvas id="qs-canvas"></canvas>
-        </div>
-        <div>
-            <h3>Merge Sort</h3>
-            <h4>Array</h4>
-            <canvas id="merge-sort-arr-canvas"></canvas>
-            <h4>Merge Aux Array</h4>
-            <canvas id="merge-sort-aux-canvas"></canvas>
-        </div>
-        <div>
-            <h3>Bottom Up Merge Sort</h3>
-            <h4>Array</h4>
-            <canvas id="bu-merge-sort-arr-canvas"></canvas>
-            <h4>Aux Array</h4>
-            <canvas id="bu-merge-sort-aux-canvas"></canvas>
-        </div>
-        <div>
-            <h3>Heap sort</h3>
-            <canvas id="heap-sort-canvas"></canvas>
-        </div>
-        <div>
-            Selection Sort
-            <canvas id="selection-sort-canvas"></canvas>
-        </div>
-        <div>
-            Bubble Sort
-            <canvas id="bubble-sort-canvas"></canvas>
-        </div>
-        <div>
-            Insertion Sort
-            <canvas id="insertion-sort-canvas"></canvas>
-        </div>
-        <div>
-            Counting Sort
-            <canvas id="counting-sort-arr-canvas"></canvas>
-            <canvas id="counting-sort-count-canvas"></canvas>
-            <canvas id="counting-sort-buffer-canvas"></canvas>
-        </div>
-        <div>
-            Radix Sort
-            <canvas id="radix-sort-arr-canvas"></canvas>
-            <canvas id="radix-sort-count-canvas"></canvas>
-            <canvas id="radix-sort-buffer-canvas"></canvas>
+        <div class="container">
+            <div>
+                <h3>Quick Sort</h3>
+                <h4>Array</h4>
+                <div>
+                    <canvas id="qs-canvas"></canvas>
+                </div>
+            </div>
+            <div>
+                <h3>Merge Sort</h3>
+                <h4>Array</h4>
+                <div>
+                    <canvas id="merge-sort-arr-canvas"></canvas>
+                </div>
+                <h4>Aux Array</h4>
+                <div>
+                    <canvas id="merge-sort-aux-canvas"></canvas>
+                </div>
+            </div>
+            <div>
+                <h3>Bottom Up Merge Sort</h3>
+                <h4>Array</h4>
+                <canvas id="bu-merge-sort-arr-canvas"></canvas>
+                <h4>Aux Array</h4>
+                <canvas id="bu-merge-sort-aux-canvas"></canvas>
+            </div>
+            <div>
+                <h3>Heap sort</h3>
+                <h4>Array</h4>
+                <canvas id="heap-sort-canvas"></canvas>
+            </div>
+            <div>
+                <h3>Counting Sort</h3>
+                <h4>Array</h4>
+                <div><canvas id="counting-sort-arr-canvas"></canvas></div>
+                <h4>Count Array</h4>
+                <div><canvas id="counting-sort-count-canvas"></canvas></div>
+                <h4>Buffer Array</h4>
+                <div><canvas id="counting-sort-buffer-canvas"></canvas></div>
+            </div>
+            <div>
+                <h3>Radix Sort</h3>
+                <h4>Array</h4>
+                <div>
+                    <canvas id="radix-sort-arr-canvas"></canvas>
+                </div>
+                <h4>Count Array</h4>
+                <div>
+                    <canvas id="radix-sort-count-canvas"></canvas>
+                </div>
+                <h4>Buffer Array</h4>
+                <div>
+                    <canvas id="radix-sort-buffer-canvas"></canvas>
+                </div>
+            </div>
+            <div>
+                <h3>Selection Sort</h3>
+                <h4>Array</h4>
+                <canvas id="selection-sort-canvas"></canvas>
+            </div>
+            <div>
+                <h3>Bubble Sort</h3>
+                <h4>Array</h4>
+                <div>
+                    <canvas id="bubble-sort-canvas"></canvas>
+                </div>
+            </div>
+            <div>
+                <h3>Insertion Sort</h3>
+                <h4>Array</h4>
+                <div>
+                    <canvas id="insertion-sort-canvas"></canvas>
+                </div>
+            </div>
         </div>
 
         <script src="sort.js" charset="utf-8"></script>
+
+        <style type="text/css" media="screen">
+body {
+    padding: 0;
+    margin: 0;
+}
+.container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.container > div {
+    border: 1px solid gray;
+    margin: 3px;
+    padding: 3px;
+}
+        </style>
     </body>
 </html>
