@@ -1,59 +1,64 @@
 
-function* countingSortGen(arr, mapper) {
+function* countingSortGen(arr, mapper, max) {
+    yield { arr, count: [], buffer: [] };
     if (arr.length < 2) {
-        return arr;
+        return;
     }
 
-    let isSorted = true;
-
-    let prevEl = mapper ? mapper(arr[0]) : arr[0];
-    let max = prevEl;
-
-    for (var i = 1, len = arr.length; i < len; i++) {
-        let el = mapper ? mapper(arr[i]) : arr[i];
-        max = Math.max(max, el);
-        if (el < prevEl) {
-            isSorted = false;
+    if (max === undefined) {
+        let isSorted = true;
+        let prevEl = mapper ? mapper(arr[0]) : arr[0];
+        max = prevEl;
+        for (var i = 1, len = arr.length; i < len; i++) {
+            let el = mapper ? mapper(arr[i]) : arr[i];
+            max = Math.max(max, el);
+            if (el < prevEl) {
+                isSorted = false;
+            }
+            prevEl = el;
+            yield { arr, count: [max], buffer: [] };
         }
-        prevEl = el;
-        yield;
+
+        if (isSorted) {
+            return;
+        }
     }
 
-    if (isSorted) {
-        return arr;
-    }
-
-    const count = new Array(max+1).fill(0);
+    const count = new Array(max+1);
+    count[0] = 0;
     for (let el of arr) {
-        count[mapper ? mapper(el) : el]++;
-        yield;
+        const countEl = mapper ? mapper(el) : el;
+        if (count[countEl]) {
+            count[countEl]++;
+        } else {
+            count[countEl] = 1;
+        }
+        yield { arr, count, buffer: []};
     }
 
     for (let i = 1; i < count.length; i++) {
-        count[i] += count[i-1];
-        yield;
+        count[i] = (count[i] || 0) + (count[i-1] || 0);
+        yield { arr, count, buffer: [] };
     }
 
     const buffer = new Array(arr.length);
-
 
     for (let i = arr.length; i > 0; i--) {
         let el = mapper ? mapper(arr[i-1]) : arr[i-1];
         buffer[count[el]-1] = arr[i-1];
         count[el]--;
-        yield;
+        yield { arr, count, buffer };
     }
 
     for (var i = 0, len = arr.length; i < len; i++) {
         arr[i] = buffer[i];
-        yield;
+        yield { arr, count, buffer };
     }
-
-    return arr;
 }
 
 
 function* radixSortGen(arr, r) {
+    yield { arr, count: [], buffer: [] };
     r = r || 8;
     const mask = (1<<r) - 1;
 
@@ -61,40 +66,38 @@ function* radixSortGen(arr, r) {
 
     for (let el of arr) {
         max = Math.max(max, el);
-        yield;
+        yield { arr, count: [max], buffer: [] };
     }
 
-    let result;
     let runs = 0;
     while (max) {
-        let stateIter = countingSortGen(arr, x => (x >> (r*runs)) & mask);
+        let stateIter = countingSortGen(arr, x => (x >> (r*runs)) & mask, mask);
         let state = stateIter.next();
-        yield;
+
         while (!state.done) {
+            yield state.value;
             state = stateIter.next();
-            yield;
         }
         max >>= r;
         runs++;
-        result = state.value;
     }
-    return result;
 }
 
-
-function heapsort(arr) {
+function* heapsortGen(arr) {
+    yield { arr };
     const heapSize = arr.length;
     for (let i = heapSize/2; i >= 0; i--) {
-        sink(arr, i, heapSize);
+        yield* sink(arr, i, heapSize);
     }
 
     for (let i = heapSize - 1; i > 0; i--) {
         swap(arr, 0, i);
-        sink(arr, 0, i);
+        yield { arr };
+        yield* sink(arr, 0, i);
     }
 }
 
-function sink(arr, i, heapSize) {
+function* sink(arr, i, heapSize) {
     let largest = i;
     const l = i*2 + 1;
     const r = l + 1;
@@ -109,12 +112,17 @@ function sink(arr, i, heapSize) {
 
     if (largest != i) {
         swap(arr, i, largest);
-        sink(arr, largest, heapSize);
+        yield { arr };
+        yield* sink(arr, largest, heapSize);
     }
+    yield { arr };
 }
 
 
 function* bottomUpMergeSortGen(arr) {
+    const auxArr = new Array(arr.length).fill(0);
+    yield { arr, auxArr };
+
     let mergeGroup = 2;
 
     while (mergeGroup <= arr.length) {
@@ -124,7 +132,7 @@ function* bottomUpMergeSortGen(arr) {
 
         while (right < arr.length) {
             const rightEnd = Math.min(right + subCount, arr.length);
-            yield *merge(arr, left, right, rightEnd);
+            yield *merge(arr, left, right, rightEnd, auxArr);
             left = right + subCount;
             right = left + subCount;
         }
@@ -134,58 +142,60 @@ function* bottomUpMergeSortGen(arr) {
 
     mergeGroup >>= 1;
     if (mergeGroup < arr.length) {
-        yield* merge(arr, 0, mergeGroup, arr.length);
+        yield* merge(arr, 0, mergeGroup, arr.length, auxArr);
     }
 }
 
 
 
 function* mergerSortGen(arr) {
-    yield* mergeSortGenInternal(arr, 0, arr.length);
+    const auxArr = new Array(arr.length).fill(0);
+    yield { arr, auxArr };
+    yield* mergeSortGenInternal(arr, 0, arr.length, auxArr);
 }
 
-function* mergeSortGenInternal(arr, from, to) {
+function* mergeSortGenInternal(arr, from, to, auxArr) {
     if (to-from < 2) return;
 
     const mid = from + Math.floor((to - from) / 2);
 
-    yield* mergeSortGenInternal(arr, from, mid);
-    yield* mergeSortGenInternal(arr, mid, to);
+    yield* mergeSortGenInternal(arr, from, mid, auxArr);
+    yield* mergeSortGenInternal(arr, mid, to, auxArr);
 
-    yield* merge(arr, from, mid, to);
+    yield* merge(arr, from, mid, to, auxArr);
 }
 
-function* merge(arr, from, mid, to) {
-    const tempArr = new Array(to-from);
+function* merge(arr, from, mid, to, auxArr) {
     let left = from;
     let right = mid;
 
     let i = 0;
     while (left < mid && right < to) {
         if (arr[left] < arr[right]) {
-            tempArr[i++] = arr[left++];
+            auxArr[i++] = arr[left++];
         } else {
-            tempArr[i++] = arr[right++];
+            auxArr[i++] = arr[right++];
         }
-        yield;
+        yield { arr, auxArr };
     }
 
     while (left < mid) {
-        tempArr[i++] = arr[left++];
-        yield;
+        auxArr[i++] = arr[left++];
+        yield { arr, auxArr };
     }
     while (right < to) {
-        tempArr[i++] = arr[right++];
-        yield;
+        auxArr[i++] = arr[right++];
+        yield { arr, auxArr };
     }
         
     for (let j = from, k = 0; j < to; j++, k++) {
-        arr[j] = tempArr[k];
-        yield;
+        arr[j] = auxArr[k];
+        yield { arr, auxArr };
     }
 }
 
 function* quickSortGen(arr) {
+    yield { arr };
     yield* quickSortGenInternal(arr, 0, arr.length);
 }
 
@@ -197,6 +207,7 @@ function* quickSortGenInternal(arr, from, to) {
     let nonVisited = from + 1;
     let randomElIdx = getRandomInt(from, to);
     swap(arr, from, randomElIdx);
+    yield { arr };
     while (nonVisited < largerFrom) {
         if (arr[nonVisited] < arr[eqFrom]) {
             swap(arr, nonVisited, eqFrom);
@@ -208,13 +219,14 @@ function* quickSortGenInternal(arr, from, to) {
         } else {
             nonVisited++;
         }
-        yield;
+        yield { arr };
     }
     yield* quickSortGenInternal(arr, smallerFrom, eqFrom);
     yield* quickSortGenInternal(arr, largerFrom, to);
 }
 
 function* bubbleSortGen(arr) {
+    yield { arr };
     let swapped = true;
     let n = arr.length;
     while (swapped) {
@@ -224,27 +236,29 @@ function* bubbleSortGen(arr) {
                 swap(arr, i, i - 1);
                 swapped = true;
             }
-            yield;
+            yield { arr };
         }
         n--;
     }
 }
 
 function* insertionSortGen(arr) {
+    yield { arr };
     for (var i = 1, len = arr.length; i < len; i++) {
         let j = i;
         while (j > 0 && arr[j] < arr[j-1]) {
             swap(arr, j, j - 1);
             j--;
-            yield;
+            yield { arr };
         }
-        yield;
+        //yield { arr };
     }
 }
 
 
 
 function* selectionSortGen(arr) {
+    yield { arr };
     for (var i = 0, len = arr.length; i < len; i++) {
 
         let minIdx = i;
@@ -252,7 +266,7 @@ function* selectionSortGen(arr) {
             if (arr[j] < arr[minIdx]) {
                 minIdx = j;
             }
-            yield;
+            yield { arr };
         }
 
         swap(arr, i, minIdx);
@@ -305,8 +319,7 @@ function draw(ctx, arr, bg = 'white') {
     ctx.fillStyle = 'black';
     let barsCount = 0;
     for (let el of arr) {
-        //const barHeight = (el - minAndMax.min) / dist * ctx.canvas.height * 0.9;
-        const barHeight = el/arr.length * ctx.canvas.height;
+        const barHeight = (el || 0)/arr.length * ctx.canvas.height;
         const xPos = barsCount * barWidth + barsCount * barGutter;
         ctx.fillRect(xPos, 0, barWidth, barHeight);
         barsCount++;
@@ -347,24 +360,30 @@ function* shuffleSortGen(arr) {
 }
 
 function runRandomArrVis(config) {
-    const {canvasId, arrSize, sortGen, speed} = config;
-    const arr = new Array(arrSize).fill(42).map((v, i) => i+1);
+    const {contexts, arrSize, sortGen, speed} = config;
+    const arr = new Array(arrSize).fill(42).map(_ => getRandomInt(0, 101));
     //const arr = new Array(arrSize).fill(42);//.map((v, i) => i+1);
     //const arr = new Array(arrSize).fill(42).map((v, i) => i % 2 == 0 ? 50: 100);
     //const arr = new Array(arrSize).fill(42).map((v, i) => i+1);
     //arr.reverse();
-    shuffle(arr);
-    runVis(canvasId, arr, sortGen, speed);
+    //shuffle(arr);
+    runVis(contexts, arr, sortGen, speed);
+}
+
+function getContext(canvasId) {
+    return document.getElementById(canvasId)
+        .getContext('2d');
 }
 
 
-function runVis(canvasId, arr, algoGen, speed) {
-    const canvas = document.getElementById(canvasId);
-    const ctx = canvas.getContext('2d');
-    ctx.translate(0, canvas.height);
-    ctx.scale(1, -1);
+function runVis(contexts, arr, algoGen, speed) {
+    if (!contexts) return;
+    for (let ctx of Object.values(contexts)) {
+        ctx.translate(0, ctx.canvas.height);
+        ctx.scale(1, -1);
+    }
 
-    const visIter = visGen(ctx, arr, algoGen);
+    const visIter = visGen(contexts, arr, algoGen);
     visIter.next();
     setTimeout(visStep, speed, visIter, speed);
 }
@@ -377,73 +396,114 @@ function visStep(visIter, speed) {
     }
 }
 
-function* visGen(ctx, arr, algoGen) {
+function* visGen(contexts, arr, algoGen) {
     const algoIter = algoGen(arr);
 
-    do {
-        draw(ctx, arr);
-        yield;
-    } while (!algoIter.next().done);
+    let state = algoIter.next();
+    let lastState = state;
 
-    draw(ctx, arr, 'yellow');
+    while (!state.done) {
+        lastState = state;
+        drawState(state.value, contexts);
+        yield;
+        state = algoIter.next();
+    }
+
+    drawState(lastState.value, contexts, 'yellow');
+}
+
+function drawState(state, contexts, bg) {
+    for (let k in state) {
+        draw(contexts[k], state[k], bg);
+    }
 }
 
 const arrSize = 100;
 const speed = 10;
 
 runRandomArrVis({
-    canvasId: 'insertion-sort-canvas',
+    contexts: {
+        arr: getContext('insertion-sort-canvas'),
+    },
     arrSize: arrSize,
     sortGen: insertionSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'selection-sort-canvas',
+    contexts: {
+        arr: getContext('selection-sort-canvas'),
+    },
     arrSize: arrSize,
     sortGen: selectionSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'bubble-sort-canvas',
+    contexts: {
+        arr: getContext('bubble-sort-canvas'),
+    },
     arrSize: arrSize,
     sortGen: bubbleSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'qs-canvas',
+    contexts: {
+        arr: getContext('qs-canvas'),
+    },
     arrSize: arrSize,
     sortGen: quickSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'merge-sort-canvas',
-    arrSize: arrSize,
-    sortGen: mergerSortGen,
-    speed: speed
-});
-
-runRandomArrVis({
-    canvasId: 'bu-merge-sort-canvas',
+    contexts: {
+        arr: getContext('bu-merge-sort-arr-canvas'),
+        auxArr: getContext('bu-merge-sort-aux-canvas'),
+    },
     arrSize: arrSize,
     sortGen: bottomUpMergeSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'counting-sort-canvas',
+    contexts: {
+        arr: getContext('counting-sort-arr-canvas'),
+        count: getContext('counting-sort-count-canvas'),
+        buffer: getContext('counting-sort-buffer-canvas')
+    },
     arrSize: arrSize,
     sortGen: countingSortGen,
     speed: speed
 });
 
 runRandomArrVis({
-    canvasId: 'radix-sort-canvas',
+    contexts: {
+        arr: getContext('radix-sort-arr-canvas'),
+        count: getContext('radix-sort-count-canvas'),
+        buffer: getContext('radix-sort-buffer-canvas')
+    },
     arrSize: arrSize,
     sortGen: radixSortGen,
     speed: speed
 });
 
+runRandomArrVis({
+    contexts: {
+        arr: getContext('merge-sort-arr-canvas'),
+        auxArr: getContext('merge-sort-aux-canvas'),
+    },
+    arrSize: arrSize,
+    sortGen: mergerSortGen,
+    speed: speed
+});
+
+runRandomArrVis({
+    contexts: {
+        arr: getContext('heap-sort-canvas'),
+    },
+    arrSize: arrSize,
+    sortGen: heapsortGen,
+    speed: speed
+});
